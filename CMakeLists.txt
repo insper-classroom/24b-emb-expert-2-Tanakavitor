@@ -1,33 +1,28 @@
-cmake_minimum_required(VERSION 3.12)
-
-# Pull in SDK (must be before project)
+cmake_minimum_required(VERSION 3.13)
 include(pico_sdk_import.cmake)
+set(FREERTOS_KERNEL_PATH ${CMAKE_CURRENT_LIST_DIR}/freertos/FreeRTOS-Kernel)
+include(freertos/FreeRTOS_Kernel_import.cmake)
 
-include(pico_extras_import_optional.cmake)
-
-project(pico_emb C CXX ASM)
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 17)
-
-if(PICO_SDK_VERSION_STRING VERSION_LESS "1.3.0")
-  message(
-    FATAL_ERROR
-      "Raspberry Pi Pico SDK version 1.3.0 (or later) required. Your version is ${PICO_SDK_VERSION_STRING}"
-  )
-endif()
-
-# Initialize the SDK
+project(pico-freertos)
 pico_sdk_init()
+add_subdirectory(oled1_lib)
 
-add_compile_options(
-  -Wall -Wno-format # int != int32_t as far as the compiler is concerned because
-                    # gcc has int32_t as long int
-  -Wno-unused-function # we have some for the docs that aren't called
+add_executable(pico-freertos
+    main/main.c
 )
 
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-  add_compile_options(-Wno-maybe-uninitialized)
-endif()
+target_include_directories(pico-freertos PRIVATE
+    freertos/
+)
 
-# Codes subdir:
-add_subdirectory(main)
+target_link_libraries(pico-freertos PRIVATE
+    oled1_lib
+    pico_stdlib
+    FreeRTOS-Kernel
+    FreeRTOS-Kernel-Heap4
+    hardware_dma
+    hardware_adc
+    hardware_spi
+)
+target_compile_options(pico-freertos PRIVATE -Wall)
+pico_add_extra_outputs(pico-freertos)
